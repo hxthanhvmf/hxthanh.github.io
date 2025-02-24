@@ -1,0 +1,174 @@
+﻿<!DOCTYPE html>
+<html data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Number Guessing Game</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <style>
+        body {
+            background-color: var(--bs-dark);
+            color: var(--bs-light);
+            padding: 20px;
+        }
+        .result {
+            margin: 10px 0;
+        }
+        .settings {
+            margin: 20px 0;
+        }
+        .settings select {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="settings">
+            <select id="languageSelect" class="form-select d-inline-block w-auto">
+                <option value="en">English</option>
+                <option value="vi">Tiếng Việt</option>
+            </select>
+        </div>
+
+        <h1 id="gameTitle">Number Guessing Game</h1>
+        <label id="digitsLabel" for="digits">Number of digits (3-6):</label>
+        <input type="number" id="digits" min="3" max="6" value="4" class="form-control w-auto">
+        <input type="text" id="guess" class="form-control w-auto" placeholder="Enter your guess">
+        <button id="checkButton" class="btn btn-primary">Check</button>
+        <button id="resetButton" class="btn btn-secondary">Reset</button>
+        <div id="result" class="result"></div>
+        <div id="attempts">Attempts: 0</div>
+        <ul id="history" class="list-group mt-3"></ul>
+    </div>
+    <script>
+        const translations = {
+            en: {
+                title: "Number Guessing Game",
+                digits: "Number of digits (3-6):",
+                check: "Check",
+                reset: "Reset",
+                correct: "Correct!",
+                tryAgain: "Try again!",
+                attempts: "Attempts: ",
+                lose: "You lost! The correct number was: ",
+                win: "Congratulations! You guessed the correct number!",
+                invalidInput: "Invalid input! Each digit must be unique."
+            },
+            vi: {
+                title: "Trò Chơi Đoán Số",
+                digits: "Số chữ số (3-6):",
+                check: "Kiểm tra",
+                reset: "Chơi lại",
+                correct: "Chính xác!",
+                tryAgain: "Thử lại!",
+                attempts: "Số lần đoán: ",
+                lose: "Bạn đã thua! Số đúng là: ",
+                win: "Chúc mừng! Bạn đã đoán đúng số!",
+                invalidInput: "Dữ liệu không hợp lệ! Các chữ số phải khác nhau."
+            }
+        };
+
+        let targetNumber;
+        let attempts = 0;
+        let gameOver = false;
+
+        function updateLanguage(lang) {
+            document.getElementById('gameTitle').textContent = translations[lang].title;
+            document.getElementById('digitsLabel').textContent = translations[lang].digits;
+            document.getElementById('checkButton').textContent = translations[lang].check;
+            document.getElementById('resetButton').textContent = translations[lang].reset;
+            document.getElementById('attempts').textContent = translations[lang].attempts + attempts;
+        }
+
+        function generateNumber(digits) {
+            let nums = Array.from({length: 10}, (_, i) => i);
+            let result = '';
+            for (let i = 0; i < digits; i++) {
+                let idx = Math.floor(Math.random() * nums.length);
+                result += nums[idx];
+                nums.splice(idx, 1);
+            }
+            return result;
+        }
+
+        function isValidGuess(guess, digits) {
+            return guess.length === digits && new Set(guess).size === guess.length && !isNaN(guess);
+        }
+
+        function checkGuess(guess, target) {
+            let correct = 0, wrongPosition = 0;
+            let targetArray = target.split('');
+            let guessArray = guess.split('');
+
+            for (let i = 0; i < guessArray.length; i++) {
+                if (guessArray[i] === targetArray[i]) {
+                    correct++;
+                    targetArray[i] = guessArray[i] = null;
+                }
+            }
+
+            for (let i = 0; i < guessArray.length; i++) {
+                if (guessArray[i] !== null) {
+                    let idx = targetArray.indexOf(guessArray[i]);
+                    if (idx !== -1) {
+                        wrongPosition++;
+                        targetArray[idx] = null;
+                    }
+                }
+            }
+            return { correct, wrongPosition };
+        }
+
+        function handleGuess() {
+            if (gameOver) return;
+            let guess = document.getElementById('guess').value;
+            let digits = parseInt(document.getElementById('digits').value);
+            let lang = document.getElementById('languageSelect').value;
+
+            if (!isValidGuess(guess, digits)) {
+                alert(translations[lang].invalidInput);
+                return;
+            }
+
+            attempts++;
+            let { correct, wrongPosition } = checkGuess(guess, targetNumber);
+            let historyItem = document.createElement('li');
+            historyItem.textContent = `#${attempts} - ${guess}: T = ${correct}, F = ${wrongPosition}`;
+            document.getElementById('history').appendChild(historyItem);
+            document.getElementById('attempts').textContent = translations[lang].attempts + attempts;
+            document.getElementById('guess').value = '';
+
+            if (correct === digits) {
+                gameOver = true;
+                document.getElementById('result').textContent = translations[lang].win;
+            } else if (attempts >= 7) {
+                gameOver = true;
+                document.getElementById('result').textContent = translations[lang].lose + targetNumber;
+            }
+        }
+
+        function startGame() {
+            let digits = parseInt(document.getElementById('digits').value);
+            targetNumber = generateNumber(digits);
+            attempts = 0;
+            gameOver = false;
+            document.getElementById('history').innerHTML = '';
+            document.getElementById('result').textContent = '';
+            document.getElementById('attempts').textContent = translations[document.getElementById('languageSelect').value].attempts + attempts;
+        }
+
+        document.getElementById('digits').addEventListener('change', startGame);
+        document.getElementById('checkButton').addEventListener('click', handleGuess);
+        document.getElementById('guess').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                handleGuess();
+            }
+        });
+        document.getElementById('resetButton').addEventListener('click', startGame);
+        document.getElementById('languageSelect').addEventListener('change', (e) => updateLanguage(e.target.value));
+
+        updateLanguage('en');
+        startGame();
+    </script>
+</body>
+</html>
